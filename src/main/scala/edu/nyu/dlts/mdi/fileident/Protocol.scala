@@ -2,6 +2,7 @@ package edu.nyu.dlts.mdi.fileident
 
 import java.io.File
 import java.util.UUID
+import com.rabbitmq.client.{ QueueingConsumer, Channel }
 
 object Protocol {
   
@@ -21,4 +22,9 @@ object Protocol {
   	agent: Agent,
   	data: Option[String]
   )
+
+  case class AMQPConnections(consumer: QueueingConsumer, publisher: Channel)
+  case class FileIdentRequest(id: UUID, file: File)
+
+  case object Listen
 }
