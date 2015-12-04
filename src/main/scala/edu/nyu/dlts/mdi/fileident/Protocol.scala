@@ -12,7 +12,7 @@ object Protocol {
   	host: String
   )
 
-  case class Request(
+  case class Response(
   	version: String,
   	request_id: UUID,
     file: File,
@@ -25,6 +25,8 @@ object Protocol {
 
   case class AMQPConnections(consumer: QueueingConsumer, publisher: Channel)
   case class FileIdentRequest(id: UUID, file: File)
-
+  case class FidoResponse(result: String, puid: String, format: String, sigName: String, mime: String, matchType: String, sigFile: String, contFile: String, fidoVers: String)
+  case class Publish(message: String)
+  
   case object Listen
 }

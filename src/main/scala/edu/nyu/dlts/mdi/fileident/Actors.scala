@@ -18,7 +18,8 @@ import org.joda.time._
 import org.joda.time.format.ISODateTimeFormat
 
 import edu.nyu.dlts.mdi.fileident.Protocol._
-import edu.nyu.dlts.mdi.fileident.AMQPSupport
+import edu.nyu.dlts.mdi.fileident.{ FidoSupport, AMQPSupport }
+
 
 class Supervisor() extends Actor {
   implicit val timeout = new Timeout(5 seconds)
@@ -28,7 +29,12 @@ class Supervisor() extends Actor {
 
   consumer ! Listen
 
+  val identifierProps = Props(new Identifier(self))
+  val identifier = context.actorOf(identifierProps, "Identifier")
+
   def receive = {
+  
+  	case fir: FileIdentRequest => identifier ! fir 
   	case _ =>
   }
 }
@@ -47,11 +53,32 @@ class Consumer(supervisor: ActorRef) extends Actor with AMQPSupport {
       val request_id = UUID.fromString((json \ "request_id").extract[String])
       val request_path = ((json \ "params") \ "request_path").extract[String]
  
- 			//do something with a message
+ 	  //do something with a message
       supervisor ! new FileIdentRequest(request_id, new File(request_path))
-			self ! Listen 
+	  self ! Listen 
   	}
 
+  	case _ => println("Message Not Understood")
+  }
+}
+
+class Identifier(supervisor: ActorRef) extends Actor with FidoSupport {
+  def receive = {	
+	case fir: FileIdentRequest => {
+	  println(getFido(fir.file))
+	}
+  }
+}
+
+class Publisher(supervisor: ActorRef) extends Actor with AMQPSupport {
+  val connection = getConnection.get
+  val connections = getAMQPConnections(connection).get
+  implicit val formats = DefaultFormats
+
+  def receive = {	
+  	case p: Publish => {
+  		connections.publisher.basicPublish(conf.getString("rabbitmq.exchange"), conf.getString("rabbitmq.publish_key"), null, p.message.getBytes())
+  	}
   	case _ => println("Message Not Understood")
   }
 }
