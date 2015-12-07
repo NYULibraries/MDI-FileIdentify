@@ -29,33 +29,20 @@ trait CommonUtils {
 				("name" -> response.agent.agent) ~ 
 				("version" -> response.agent.version) ~ 
 				("host" -> response.agent.host))) ~
-			("data" -> null) 
+			("data" -> response.data) 
 		)
 
-		compact(render(json))
+		pretty(render(json))
 	} 
 
 	def getAgent(): Agent = {
 		import scala.sys.process._
-		val command = Seq("ewfinfo", "-V")
-		var version = "NO_VERSION"
-		var agent = "NO_AGENT"
-
-		val ewfVersion = "^ewfinfo.*".r
 		
-		val logger = ProcessLogger( 
-			(o: String) => { 
-				o match {
-					case ewfVersion(_*) => { 
-						agent = o.split(" ")(0)
-						version = o.split(" ")(1)
-					}
-					case _ =>
-				} 
-			})
+		var fidoVersion = ""
+      	val versionLogger = ProcessLogger((o: String) => fidoVersion = fidoVersion + o)
+      	Seq("/usr/local/bin/fido", "-v") ! versionLogger
+		val versFields = fidoVersion.toString().split(" ")
 		
-		command ! logger
-
-		new Agent(agent, version, "localhost")
+		new Agent("fido", versFields(1).substring(1), "localhost")
 	}
 }

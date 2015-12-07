@@ -67,11 +67,12 @@ class Identifier(supervisor: ActorRef) extends Actor with FidoSupport with Commo
   def receive = {	
 	case fir: FileIdentRequest => {
 
-    val response = createNewResponse
+    var response = createNewResponse
 
     getFido(fir.file) match {
-      case fido: Some[JValue] => {
-         
+      case fido: Some[JObject] => {
+        response = response.copy(outcome = Some("success"), end_time = Some(now()), data = fido )
+        println(convertResponseToJson(response))
       }
 
       case None => 
