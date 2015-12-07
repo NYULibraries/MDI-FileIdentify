@@ -1,5 +1,6 @@
 package edu.nyu.dlts.mdi.fileident
 
+import java.util.UUID
 import org.joda.time._
 import org.joda.time.format.ISODateTimeFormat
 import org.json4s._
@@ -7,15 +8,17 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import edu.nyu.dlts.mdi.fileident.Protocol._
 
-trait SysUtils {
+trait CommonUtils {
 	
   def now(): String = {
     val dt = new DateTime()
     val fmt = ISODateTimeFormat.dateTime()
     fmt.print(dt)
   }
+  
+  def createNewResponse(): Response = { new Response("0.1", UUID.randomUUID(), None, now(), None, getAgent(), None) }
 
-  def createResult(response: Response): String = {
+  def convertResponseToJson(response: Response): String = {
 		val json = ( 
 			("version" -> response.version) ~ 
 			("request_id" -> response.request_id.toString()) ~ 
@@ -30,7 +33,6 @@ trait SysUtils {
 		)
 
 		compact(render(json))
-
 	} 
 
 	def getAgent(): Agent = {

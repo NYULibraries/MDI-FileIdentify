@@ -15,7 +15,6 @@ object Protocol {
   case class Response(
   	version: String,
   	request_id: UUID,
-    file: File,
   	outcome: Option[String],
   	start_time: String,
   	end_time: Option[String],

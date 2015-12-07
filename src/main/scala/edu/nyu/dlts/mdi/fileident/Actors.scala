@@ -18,7 +18,7 @@ import org.joda.time._
 import org.joda.time.format.ISODateTimeFormat
 
 import edu.nyu.dlts.mdi.fileident.Protocol._
-import edu.nyu.dlts.mdi.fileident.{ FidoSupport, AMQPSupport }
+import edu.nyu.dlts.mdi.fileident.{ FidoSupport, AMQPSupport, CommonUtils }
 
 
 class Supervisor() extends Actor {
@@ -47,25 +47,35 @@ class Consumer(supervisor: ActorRef) extends Actor with AMQPSupport {
   def receive = {
 
   	case Listen => {
- 	  val delivery = connections.consumer.nextDelivery()
+ 	    val delivery = connections.consumer.nextDelivery()
       val message = new String(delivery.getBody())
       val json = parse(message)
       val request_id = UUID.fromString((json \ "request_id").extract[String])
       val request_path = ((json \ "params") \ "request_path").extract[String]
  
- 	  //do something with a message
+ 	    //do something with a message
       supervisor ! new FileIdentRequest(request_id, new File(request_path))
-	  self ! Listen 
+	    
+      self ! Listen 
   	}
 
-  	case _ => println("Message Not Understood")
+  	case _ => 
   }
 }
 
-class Identifier(supervisor: ActorRef) extends Actor with FidoSupport {
+class Identifier(supervisor: ActorRef) extends Actor with FidoSupport with CommonUtils {
   def receive = {	
 	case fir: FileIdentRequest => {
-	  println(getFido(fir.file))
+
+    val response = createNewResponse
+
+    getFido(fir.file) match {
+      case fido: Some[JValue] => {
+         
+      }
+
+      case None => 
+    }
 	}
   }
 }
