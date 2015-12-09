@@ -16,7 +16,7 @@ trait CommonUtils {
     fmt.print(dt)
   }
   
-  def createNewResponse(): Response = { new Response("0.1", UUID.randomUUID(), None, now(), None, getAgent(), None) }
+  def createNewResponse(uuid: UUID): Response = { new Response("0.1", uuid, None, now(), None, getAgent(), None) }
 
   def convertResponseToJson(response: Response): String = {
 		val json = ( 
