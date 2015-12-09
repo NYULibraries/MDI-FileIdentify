@@ -41,8 +41,14 @@ trait CommonUtils {
 		var fidoVersion = ""
       	val versionLogger = ProcessLogger((o: String) => fidoVersion = fidoVersion + o)
       	Seq("/usr/local/bin/fido", "-v") ! versionLogger
+
+      	var hostname = ""
+      	var hostProcess = ProcessLogger((o: String) => hostname = o)
+      	Seq("hostname") ! hostProcess
+
+      	
 		val versFields = fidoVersion.toString().split(" ")
 		
-		new Agent("fido", versFields(1).substring(1), "localhost")
+		new Agent("fido", versFields(1).substring(1), hostname)
 	}
 }
