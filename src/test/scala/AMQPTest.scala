@@ -1,4 +1,5 @@
-import collection.mutable.Stack
+package mdi.test
+
 import com.rabbitmq.client._
 import com.typesafe.config._
 import java.io.File
@@ -7,11 +8,16 @@ import org.scalatest._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 
-import edu.nyu.dlts.mdi.fileident.AMQPSupport
-import edu.nyu.dlts.mdi.fileident.Protocol._
-
-class PublishSpec extends FlatSpec with Matchers with AMQPSupport {
+class PublishSpec extends FlatSpec with Matchers with AMQPTestSupport {
+  
+  "A RabbitMQ connection" should "have a heartbeat" in {
+    getHeartbeat() >= 0 should be (true)
+  }
+/*
   val connection = getConnection.get
   val channel = connection.createChannel()
   val exchangeName = conf.getString("rabbitmq.exchange")
@@ -19,11 +25,6 @@ class PublishSpec extends FlatSpec with Matchers with AMQPSupport {
   val queueName = channel.queueDeclare().getQueue()
   val testKey = conf.getString("rabbittest.test_request_key")
   channel.queueBind(queueName, exchangeName, testKey) 
-
-  "A RabbitMQ connection" should "have a heartbeat" in {
-    val heartbeat = connection.getHeartbeat()
-    heartbeat >= 0 should be (true)
-  }
 
   "A RabbittMQ channel " should "have a channel number" in {
     val channelNumber = channel.getChannelNumber()
@@ -40,5 +41,6 @@ class PublishSpec extends FlatSpec with Matchers with AMQPSupport {
     channel.basicPublish(exchangeName, testKey, null, compact(render(json)).getBytes()) 
     1 should be (1)
   }
+  */
   
 }

@@ -1,6 +1,6 @@
 package edu.nyu.dlts.mdi.fileident
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.{ Actor, ActorSystem, Props }
 import java.io.File
 import Protocol._
 import edu.nyu.dlts.mdi.fileident.actors._
