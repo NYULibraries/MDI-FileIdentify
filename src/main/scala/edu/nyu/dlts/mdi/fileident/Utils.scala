@@ -32,7 +32,7 @@ trait CommonUtils {
 			("data" -> response.data) 
 		)
 
-		pretty(render(json))
+		compact(render(json))
 	} 
 
 	def getAgent(): Agent = {

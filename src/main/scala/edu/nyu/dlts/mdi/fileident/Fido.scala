@@ -11,7 +11,6 @@ import edu.nyu.dlts.mdi.fileident.Protocol._
 
 trait FidoSupport {
 
-
   def getFido(file: File): Option[JObject] = {
     var fido: Option[String] = Some("")
 
@@ -30,25 +29,22 @@ trait FidoSupport {
     val version = ProcessLogger((o: String) => fidoVersion = fidoVersion + o)
     Seq("/usr/local/bin/fido", "-v") ! version
 
-
-   
-
     fido match {
 
       case Some(f) => {
         val pronomFields = f.split(",")
-        val versFields = version.toString().split(" ")
+        val versFields = fidoVersion.split(" ")
+
         val json = (
           ("result" -> pronomFields(0)) ~
           ("puid" -> pronomFields(2)) ~
           ("format" -> removeQuotes(pronomFields(3))) ~
-          ("signame" -> removeQuotes(pronomFields(4))) ~
+          ("signature_name" -> removeQuotes(pronomFields(4))) ~
           ("mime" -> removeQuotes(pronomFields(7))) ~
-          ("matchType" -> removeQuotes(pronomFields(8))) ~
-          ("sigFile" -> versFields(2).substring(1, versFields(2).length - 1)) ~
-          ("contFile" -> versFields(3).substring(0, versFields(3).length - 1)) 
-        )
-        
+          ("match_type" -> removeQuotes(pronomFields(8))) ~
+          ("signature_file" -> versFields(2).substring(1, versFields(2).length - 1)) ~
+          ("container_file" -> versFields(3).substring(0, versFields(3).length - 1))
+          ) 
         Some(json)
       }
       case None => None

@@ -32,9 +32,13 @@ class Supervisor() extends Actor {
   val identifierProps = Props(new Identifier(self))
   val identifier = context.actorOf(identifierProps, "Identifier")
 
+  val publisherProps = Props(new Publisher(self))
+  val publisher = context.actorOf(publisherProps, "Publisher")
+
   def receive = {
   
-  	case fir: FileIdentRequest => identifier ! fir 
+  	case fir: FileIdentRequest => identifier ! fir
+    case pub: Publish => publisher ! pub
   	case _ =>
   }
 }
@@ -72,7 +76,7 @@ class Identifier(supervisor: ActorRef) extends Actor with FidoSupport with Commo
     getFido(fir.file) match {
       case fido: Some[JObject] => {
         response = response.copy(outcome = Some("success"), end_time = Some(now()), data = fido )
-        println(convertResponseToJson(response))
+        supervisor ! Publish(convertResponseToJson(response))
       }
 
       case None => 
@@ -90,6 +94,6 @@ class Publisher(supervisor: ActorRef) extends Actor with AMQPSupport {
   	case p: Publish => {
   		connections.publisher.basicPublish(conf.getString("rabbitmq.exchange"), conf.getString("rabbitmq.publish_key"), null, p.message.getBytes())
   	}
-  	case _ => println("Message Not Understood")
+  	case _ => 
   }
 }

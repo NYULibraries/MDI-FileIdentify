@@ -27,6 +27,7 @@ object Protocol {
 
   case class AMQPConnections(consumer: QueueingConsumer, publisher: Channel)
   case class FileIdentRequest(id: UUID, file: File)
+  
   case class Publish(message: String)
   
   case object Listen
