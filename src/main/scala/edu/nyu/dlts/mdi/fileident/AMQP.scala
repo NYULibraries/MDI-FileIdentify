@@ -9,42 +9,32 @@ import java.io.File
 
 trait AMQPSupport {
 
-  val conf = ConfigFactory.load() 
   val factory = new ConnectionFactory
-  val EXCHANGE_NAME = conf.getString("rabbitmq.exchange")
-  
-  
-  def getConnection(): Option[Connection] = {
-    try {
-      factory.setHost(conf.getString("rabbitmq.host"))
-      Some(factory.newConnection())
-    } catch {
-      case e: Exception => None //log error
-    }
+
+  def getConsumer(host: String, exhangeName: String, consumeKey: String): QueueingConsumer = {
+    val connection = getConnection(host)
+    val channel = getChannel(connection)
+    val queueName = channel.queueDeclare().getQueue()
+    channel.queueBind(queueName, exhangeName, consumeKey)
+    val consumer = new QueueingConsumer(channel)
+    channel.basicConsume(queueName, true, consumer)
+    consumer
   }
 
-  def getAMQPConnections(connection: Connection): Option[AMQPConnections] = {
-    try {
-      val pubChannel = getChannel(connection)
-      val cons = getConsumer(getChannel(connection))
-      Some(new AMQPConnections(cons, pubChannel))
-    } catch {
-      case e: Exception => None //log error
-    }
+  def getPublisher(host: String): Channel = {
+    val connection = getConnection(host)
+    getChannel(connection)
+  }
+
+  private def getConnection(host: String): Connection = {
+    factory.setHost(host)
+    factory.newConnection()
   }
 
   private def getChannel(connection: Connection): Channel = {
     val channel = connection.createChannel()
     channel.queueDeclare().getQueue()
     channel
-  }
-
-  private def getConsumer(channel: Channel): QueueingConsumer = {
-    val QUEUE_NAME = channel.queueDeclare().getQueue()
-    channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, conf.getString("rabbitmq.consume_key"))
-    val consumer = new QueueingConsumer(channel)
-    channel.basicConsume(QUEUE_NAME, true, consumer)
-    consumer
   }
 
 }

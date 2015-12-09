@@ -3,25 +3,27 @@ package edu.nyu.dlts.mdi.fileident.actors
 import akka.actor.{ Actor, ActorRef, Props, PoisonPill }
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config._
+import com.rabbitmq.client.{ Channel, Connection }
 import java.io.{ File, FileWriter }
 import java.util.UUID
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import com.rabbitmq.client.{ Channel, Connection }
+import org.joda.time._
+import org.joda.time.format.ISODateTimeFormat
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.io.Source
 import scala.language.postfixOps
-import org.joda.time._
-import org.joda.time.format.ISODateTimeFormat
 
 import edu.nyu.dlts.mdi.fileident.Protocol._
 import edu.nyu.dlts.mdi.fileident.{ FidoSupport, AMQPSupport, CommonUtils }
 
 
 class Supervisor() extends Actor {
+  
   implicit val timeout = new Timeout(5 seconds)
 
   val consumerProps = Props(new Consumer(self))
@@ -43,15 +45,16 @@ class Supervisor() extends Actor {
   }
 }
 
-class Consumer(supervisor: ActorRef) extends Actor with AMQPSupport {
-  val connection = getConnection.get
-  val connections = getAMQPConnections(connection).get
+class Consumer(supervisor: ActorRef) extends Actor with AMQPSupport with AMQPConfiguration {
+
+  val consumer = getConsumer(conf.getString("rabbitmq.host"), conf.getString("rabbitmq.exchange_name"), conf.getString("rabbitmq.consume_key"))
+
   implicit val formats = DefaultFormats
 
   def receive = {
 
   	case Listen => {
- 	    val delivery = connections.consumer.nextDelivery()
+ 	    val delivery = consumer.nextDelivery()
       val message = new String(delivery.getBody())
       val json = parse(message)
       val request_id = UUID.fromString((json \ "request_id").extract[String])
@@ -71,7 +74,7 @@ class Identifier(supervisor: ActorRef) extends Actor with FidoSupport with Commo
   def receive = {	
 	case fir: FileIdentRequest => {
 
-    var response = createNewResponse
+    var response = createNewResponse(fir.id)
 
     getFido(fir.file) match {
       case fido: Some[JObject] => {
@@ -85,15 +88,16 @@ class Identifier(supervisor: ActorRef) extends Actor with FidoSupport with Commo
   }
 }
 
-class Publisher(supervisor: ActorRef) extends Actor with AMQPSupport {
-  val connection = getConnection.get
-  val connections = getAMQPConnections(connection).get
+class Publisher(supervisor: ActorRef) extends Actor with AMQPSupport with AMQPConfiguration {
+  val publisher = getPublisher(conf.getString("rabbitmq.host"))
   implicit val formats = DefaultFormats
 
   def receive = {	
   	case p: Publish => {
-  		connections.publisher.basicPublish(conf.getString("rabbitmq.exchange"), conf.getString("rabbitmq.publish_key"), null, p.message.getBytes())
+  		publisher.basicPublish(conf.getString("rabbitmq.exchange"), conf.getString("rabbitmq.publish_key"), null, p.message.getBytes())
   	}
   	case _ => 
   }
 }
+
+trait AMQPConfiguration { val conf = ConfigFactory.load() }
