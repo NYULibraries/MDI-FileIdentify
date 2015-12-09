@@ -11,22 +11,27 @@ import edu.nyu.dlts.mdi.fileident.Protocol._
 
 trait FidoSupport {
 
-  val pattern = "^\".*\"$".r
 
   def getFido(file: File): Option[JObject] = {
     try {
       
       var fidoIdent = ""
-      val identLogger = ProcessLogger((o: String) => fidoIdent = fidoIdent + (o + "\n"))
-      Seq("/usr/local/bin/fido", file.getAbsolutePath) ! identLogger
+      val ok = "^OK.*".r
+      val iProcess = ProcessLogger((o: String) => {
+        ok.findFirstIn(o) match {
+          case Some(i) => ident = i
+          case None =>  
+        }
+      })
+
+      Seq("/usr/local/bin/fido", file.getAbsolutePath) ! iProcess
 
       var fidoVersion = ""
       val versionLogger = ProcessLogger((o: String) => fidoVersion = fidoVersion + o)
       Seq("/usr/local/bin/fido", "-v") ! versionLogger
 
 
-      val fidoOutput = fidoIdent.split("\n")
-      val pronomFields = fidoOutput(1).split(",")
+      val pronomFields = fidoIdent.split(",")
       val versFields = fidoVersion.toString().split(" ")
 
       val json = (
@@ -45,7 +50,7 @@ trait FidoSupport {
       Some(json)
 
     } catch {
-      case e: Exception => { println(e); None  }
+      case e: Exception => { None  }
     }
   }
 
