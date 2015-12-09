@@ -13,53 +13,54 @@ trait FidoSupport {
 
 
   def getFido(file: File): Option[JObject] = {
-    try {
-      
-      var fidoIdent = ""
-      val ok = "^OK.*".r
-      val iProcess = ProcessLogger((o: String) => {
-        ok.findFirstIn(o) match {
-          case Some(i) => ident = i
-          case None =>  
-        }
-      })
+    var fido: Option[String] = Some("")
 
-      Seq("/usr/local/bin/fido", file.getAbsolutePath) ! iProcess
+    val ok = "^OK.*".r
 
-      var fidoVersion = ""
-      val versionLogger = ProcessLogger((o: String) => fidoVersion = fidoVersion + o)
-      Seq("/usr/local/bin/fido", "-v") ! versionLogger
+    val iProcess = ProcessLogger((o: String) => {
+      ok.findFirstIn(o) match {
+        case Some(i) => fido = Some(o)
+        case None =>  
+      }
+    })
+
+    Seq("/usr/local/bin/fido", file.getAbsolutePath) ! iProcess
+
+    var fidoVersion = ""
+    val version = ProcessLogger((o: String) => fidoVersion = fidoVersion + o)
+    Seq("/usr/local/bin/fido", "-v") ! version
 
 
-      val pronomFields = fidoIdent.split(",")
-      val versFields = fidoVersion.toString().split(" ")
+   
 
-      val json = (
-        //format: String, sigName: String, mime: String, matchType: String, sigFile: String, contFile: String, fidoVers: String)
-        ("result" -> pronomFields(0)) ~
-        ("puid" -> pronomFields(2)) ~
-        ("format" -> removeQuotes(pronomFields(3))) ~
-        ("signame" -> removeQuotes(pronomFields(4))) ~
-        ("mime" -> removeQuotes(pronomFields(7))) ~
-        ("matchType" -> removeQuotes(pronomFields(8))) ~
-        ("sigFile" -> versFields(2).substring(1, versFields(2).length - 1)) ~
-        ("contFile" -> versFields(3).substring(0, versFields(3).length - 1)) 
+    fido match {
 
-      )
-      
-      Some(json)
-
-    } catch {
-      case e: Exception => { None  }
+      case Some(f) => {
+        val pronomFields = f.split(",")
+        val versFields = version.toString().split(" ")
+        val json = (
+          ("result" -> pronomFields(0)) ~
+          ("puid" -> pronomFields(2)) ~
+          ("format" -> removeQuotes(pronomFields(3))) ~
+          ("signame" -> removeQuotes(pronomFields(4))) ~
+          ("mime" -> removeQuotes(pronomFields(7))) ~
+          ("matchType" -> removeQuotes(pronomFields(8))) ~
+          ("sigFile" -> versFields(2).substring(1, versFields(2).length - 1)) ~
+          ("contFile" -> versFields(3).substring(0, versFields(3).length - 1)) 
+        )
+        
+        Some(json)
+      }
+      case None => None
     }
   }
 
   def removeQuotes(in: String): String = {
-    if((pattern findAllIn in).isEmpty){
+
+    if(("^\".*\"$".r findAllIn in).isEmpty){
       in
     } else {
       in.substring(1, in.length -1)
     }
   }
-
 }
