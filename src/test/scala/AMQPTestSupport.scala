@@ -14,6 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ ExecutionContext, Future, Await }
 import scala.concurrent._
 import scala.language.postfixOps
+import scala.sys.process._
 import org.json4s.DefaultFormats._
 
 import edu.nyu.dlts.mdi.fileident.{ FidoSupport, AMQPSupport }
@@ -45,6 +46,18 @@ trait AMQPTestSupport extends FidoSupport with AMQPConfiguration {
   	}
   }
 
+  def testFile(): Boolean = {
+    val file = new File(conf.getString("rabbittest.test_file_loc"))
+    file.exists
+  }
+
+  def testFido(): Boolean = {
+    var fido = ""
+    val process = ProcessLogger((o: String) => fido = o)
+    Seq("which", "fido2") ! process
+    fido != ""
+  }
+
   def getChannel(): Int = {
     val future = publisher ? GetChannel
     
@@ -63,9 +76,8 @@ trait AMQPTestSupport extends FidoSupport with AMQPConfiguration {
     )))
    
     publisher ! TestRequest(json)
-    Thread.sleep(5000)
     
-    vectorManager ! Dump
+    Thread.sleep(5000)
 
     val future = vectorManager ? new IdRequest(id)
 
@@ -84,15 +96,14 @@ class VectorManager extends Actor {
   var map: Map[String, String]  = Map()
   def receive = {
     case Dump => println(map)
+    
     case p: Publish => { 
       val id = (parse(p.message) \ "request_id").extract[String]
       map = map + (id ->  p.message) 
     }
 
-    case i:IdRequest => { 
-      println(i.uuid)
-      sender ! map.contains(i.uuid) 
-    }
+    case i:IdRequest => sender ! map.contains(i.uuid) 
+
 
     case _ =>
   }
